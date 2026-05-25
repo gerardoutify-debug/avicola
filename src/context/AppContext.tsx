@@ -16,6 +16,17 @@ export interface Camion {
   fechaRegistro?: string;
 }
 
+export interface Proveedor {
+  ruc: string;
+  razonSocial: string;
+  estado?: string;
+  condicion?: string;
+  direccion?: string;
+  contacto?: string;
+  telefono?: string;
+  fechaRegistro?: string;
+}
+
 interface Toast {
   message: string;
   type: 'success' | 'error' | 'info';
@@ -116,6 +127,7 @@ interface AppContextType {
   lotes: Lote[];
   ventas: any[];
   camiones: Camion[];
+  proveedores: Proveedor[];
   isLoading: boolean;
   isConfigured: boolean;
   credentials: Credentials;
@@ -125,6 +137,8 @@ interface AppContextType {
   addCamion: (camion: Camion) => Promise<void>;
   deleteLote: (nroFactura: string) => Promise<void>;
   deleteVenta: (idPedido: string) => Promise<void>;
+  addProveedor: (proveedor: Proveedor) => Promise<void>;
+  deleteProveedor: (ruc: string) => Promise<void>;
   showConfirm: (title: string, message: string, onConfirm: () => void, options?: { confirmLabel?: string; variant?: 'danger' | 'primary' }) => void;
   loginGoogle: () => Promise<void>;
   logoutGoogle: () => void;
@@ -145,6 +159,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [lotes, setLotes] = useState<Lote[]>([]);
   const [ventas, setVentas] = useState<any[]>([]);
   const [camiones, setCamiones] = useState<Camion[]>([]);
+  const [proveedores, setProveedores] = useState<Proveedor[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [credentials, setCredentials] = useState<Credentials>({
     clientId: '',
@@ -235,13 +250,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (mode === 'demo') {
       const localLotes = localStorage.getItem('avicola_local_lotes');
       setLotes(localLotes ? JSON.parse(localLotes) : SAMPLE_LOTES);
-      
       const localVentas = localStorage.getItem('avicola_local_ventas');
       setVentas(localVentas ? JSON.parse(localVentas) : SAMPLE_VENTAS);
-      
       const localCamiones = localStorage.getItem('avicola_local_camiones');
       setCamiones(localCamiones ? JSON.parse(localCamiones) : SAMPLE_CAMIONES);
-      
+      const localProveedores = localStorage.getItem('avicola_local_proveedores');
+      setProveedores(localProveedores ? JSON.parse(localProveedores) : []);
       setIsLoading(false);
       return;
     }
@@ -268,6 +282,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setCamiones([]);
       }
 
+      try {
+        const resProveedores = await fetch('/api/proveedores');
+        if (resProveedores.ok) setProveedores(await resProveedores.json());
+        else setProveedores([]);
+      } catch { setProveedores([]); }
+
       setAuthActive(true);
     } catch (err: any) {
       console.warn('Google Sheets API offline or error:', err);
@@ -277,6 +297,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setLotes([]);
       setVentas([]);
       setCamiones([]);
+      setProveedores([]);
       setAuthActive(false);
     } finally {
       setIsLoading(false);
@@ -468,6 +489,60 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const addProveedor = async (proveedor: Proveedor) => {
+    setIsLoading(true);
+    try {
+      if (mode === 'demo') {
+        const local = localStorage.getItem('avicola_local_proveedores');
+        const current: Proveedor[] = local ? JSON.parse(local) : [];
+        if (current.some(p => p.ruc === proveedor.ruc)) throw new Error('Ya existe un proveedor con ese RUC.');
+        const updated = [proveedor, ...current];
+        localStorage.setItem('avicola_local_proveedores', JSON.stringify(updated));
+        setProveedores(updated);
+      } else {
+        const res = await fetch('/api/proveedores', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ proveedor }),
+        });
+        if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error || 'Error al guardar el proveedor.'); }
+        await refreshData();
+      }
+    } catch (err) {
+      showToast('Error al guardar proveedor: ' + (err as Error).message, 'error');
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const deleteProveedor = async (ruc: string) => {
+    setIsLoading(true);
+    try {
+      if (mode === 'demo') {
+        const local = localStorage.getItem('avicola_local_proveedores');
+        const current: Proveedor[] = local ? JSON.parse(local) : [];
+        const updated = current.filter(p => p.ruc !== ruc);
+        localStorage.setItem('avicola_local_proveedores', JSON.stringify(updated));
+        setProveedores(updated);
+      } else {
+        const res = await fetch('/api/proveedores', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ruc }),
+        });
+        if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error || 'Error al eliminar el proveedor.'); }
+        await refreshData();
+      }
+      showToast('Proveedor eliminado correctamente.', 'success');
+    } catch (err) {
+      showToast('Error al eliminar proveedor: ' + (err as Error).message, 'error');
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const addCamion = async (camion: Camion) => {
     setIsLoading(true);
     try {
@@ -510,6 +585,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         lotes,
         ventas,
         camiones,
+        proveedores,
         isLoading,
         isConfigured,
         credentials,
@@ -519,6 +595,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addCamion,
         deleteLote,
         deleteVenta,
+        addProveedor,
+        deleteProveedor,
         showConfirm,
         loginGoogle,
         logoutGoogle,

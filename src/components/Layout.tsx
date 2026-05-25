@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { 
-  LayoutDashboard, 
-  Boxes, 
-  ShoppingCart, 
+import {
+  LayoutDashboard,
+  Boxes,
+  ShoppingCart,
   Search,
-  RefreshCw, 
-  Database, 
+  RefreshCw,
+  Database,
   Menu,
   X,
-  Truck
+  Truck,
+  Building2
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -28,6 +29,7 @@ export const Layout: React.FC<LayoutProps> = ({ activeTab, setActiveTab, childre
     { name: 'Procesamiento y Ventas', id: 'ventas', icon: ShoppingCart },
     { name: 'Búsqueda Histórica', id: 'busqueda', icon: Search },
     { name: 'Camiones', id: 'camiones', icon: Truck },
+    { name: 'Proveedores', id: 'proveedores', icon: Building2 },
   ];
 
   return (

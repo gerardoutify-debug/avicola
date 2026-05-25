@@ -6,6 +6,7 @@ import { LotesForm } from './components/LotesForm';
 import { VentasForm } from './components/VentasForm';
 import { Busqueda } from './components/Busqueda';
 import { CamionesForm } from './components/CamionesForm';
+import { ProveedoresForm } from './components/ProveedoresForm';
 
 function AppContent() {
   const [activeTab, setActiveTab] = useState<string>('dashboard');
@@ -22,6 +23,8 @@ function AppContent() {
         return <Busqueda />;
       case 'camiones':
         return <CamionesForm />;
+      case 'proveedores':
+        return <ProveedoresForm />;
       default:
         return <Dashboard />;
     }
