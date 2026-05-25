@@ -74,53 +74,28 @@ export async function readSheetRange(sheetName: string, range: string = 'A1:Z100
 
 // Asegurar que la pestaña exista, si no, crearla con cabeceras
 export async function ensureSheetExists(sheetName: string, headers: string[]) {
-  let sheetExists = false;
-  let isEmpty = true;
+  // Verificar existencia real via metadata (no via lectura de rango, que puede engañar)
+  const metadata = await requestSheetsAPI('');
+  const existingSheets: any[] = metadata.sheets || [];
+  const sheetExists = existingSheets.some((s: any) => s.properties?.title === sheetName);
 
-  try {
-    const data = await readSheetRange(sheetName, 'A1:A1');
-    sheetExists = true;
-    if (data && data.length > 0) {
-      isEmpty = false;
-    }
-  } catch (e) {
-    // Si falla la lectura, asumimos que no existe la hoja
-  }
-
-  // Si la hoja no existe, la creamos
   if (!sheetExists) {
-    try {
-      await requestSheetsAPI(':batchUpdate', {
-        method: 'POST',
-        body: JSON.stringify({
-          requests: [{
-            addSheet: {
-              properties: {
-                title: sheetName,
-              }
-            }
-          }]
-        })
-      });
-      isEmpty = true; // Recién creada, por lo tanto vacía
-    } catch (err) {
-      console.error(`Error creando pestaña ${sheetName}:`, err);
-    }
+    await requestSheetsAPI(':batchUpdate', {
+      method: 'POST',
+      body: JSON.stringify({
+        requests: [{ addSheet: { properties: { title: sheetName } } }]
+      })
+    });
   }
 
-  // Si está vacía (sea porque ya existía pero vacía, o porque la acabamos de crear), escribimos cabeceras
-  if (isEmpty) {
-    try {
-      const colLetter = String.fromCharCode(65 + headers.length - 1);
-      await requestSheetsAPI(`/values/${encodeURIComponent(`'${sheetName}'!A1:${colLetter}1`)}?valueInputOption=USER_ENTERED`, {
-        method: 'PUT',
-        body: JSON.stringify({
-          values: [headers]
-        })
-      });
-    } catch (err) {
-      console.error(`Error escribiendo cabeceras en pestaña ${sheetName}:`, err);
-    }
+  // Escribir cabeceras si A1 está vacío
+  const headerRow = await readSheetRange(sheetName, 'A1:A1');
+  if (!headerRow || headerRow.length === 0) {
+    const colLetter = String.fromCharCode(65 + headers.length - 1);
+    await requestSheetsAPI(`/values/${encodeURIComponent(`'${sheetName}'!A1:${colLetter}1`)}?valueInputOption=USER_ENTERED`, {
+      method: 'PUT',
+      body: JSON.stringify({ values: [headers] })
+    });
   }
 }
 
