@@ -1,9 +1,9 @@
-import { readSheetRange, ensureSheetExists, appendRowToSheet } from './_sheets.js';
+import { readSheetRange, ensureSheetExists, appendRowToSheet, deleteRowFromSheet } from './_sheets.js';
 
 export default async function handler(req: any, res: any) {
   // CORS Headers
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
@@ -156,8 +156,24 @@ export default async function handler(req: any, res: any) {
       await ensureSheetExists(targetSheet, headers);
 
       await appendRowToSheet(targetSheet, rowValues);
-      
       return res.status(200).json({ success: true });
+    }
+
+    if (req.method === 'DELETE') {
+      const { idPedido } = req.body;
+      const rowsCarcasa = await readSheetRange('BD_Carcasas', 'A2:A1000');
+      const cIdx = rowsCarcasa.findIndex((row: any) => row[0] === idPedido);
+      if (cIdx !== -1) {
+        await deleteRowFromSheet('BD_Carcasas', cIdx + 1);
+        return res.status(200).json({ success: true });
+      }
+      const rowsEntero = await readSheetRange('BD_Enteros', 'A2:A1000');
+      const eIdx = rowsEntero.findIndex((row: any) => row[0] === idPedido);
+      if (eIdx !== -1) {
+        await deleteRowFromSheet('BD_Enteros', eIdx + 1);
+        return res.status(200).json({ success: true });
+      }
+      return res.status(404).json({ error: 'Venta no encontrada' });
     }
 
     return res.status(405).json({ error: 'Method Not Allowed' });

@@ -1,25 +1,81 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { Truck, User, Plus, RefreshCw } from 'lucide-react';
-import Lottie from 'lottie-react';
+
+const Truck3D = () => (
+  <svg viewBox="0 0 240 155" xmlns="http://www.w3.org/2000/svg" className="w-full h-full drop-shadow-xl">
+    <defs>
+      <linearGradient id="tg-body" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#6366f1"/>
+        <stop offset="100%" stopColor="#4338ca"/>
+      </linearGradient>
+      <linearGradient id="tg-top" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#818cf8"/>
+        <stop offset="100%" stopColor="#6366f1"/>
+      </linearGradient>
+      <linearGradient id="tg-side" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#3730a3"/>
+        <stop offset="100%" stopColor="#312e81"/>
+      </linearGradient>
+      <linearGradient id="tg-cab" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#4338ca"/>
+        <stop offset="100%" stopColor="#3730a3"/>
+      </linearGradient>
+      <filter id="tg-shadow">
+        <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="#312e81" floodOpacity="0.25"/>
+      </filter>
+    </defs>
+    {/* Ground shadow */}
+    <ellipse cx="115" cy="148" rx="95" ry="7" fill="#0f172a" opacity="0.1"/>
+    {/* === CARGO === */}
+    <rect x="12" y="36" width="118" height="72" rx="3" fill="url(#tg-body)" filter="url(#tg-shadow)"/>
+    <polygon points="12,36 130,36 143,22 25,22" fill="url(#tg-top)"/>
+    <polygon points="130,36 143,22 143,95 130,108" fill="url(#tg-side)"/>
+    {/* Cargo details */}
+    <line x1="12" y1="62" x2="130" y2="62" stroke="#a5b4fc" strokeWidth="1.5" opacity="0.35"/>
+    <line x1="12" y1="82" x2="130" y2="82" stroke="#a5b4fc" strokeWidth="1" opacity="0.25"/>
+    <line x1="55" y1="36" x2="55" y2="108" stroke="#a5b4fc" strokeWidth="1" opacity="0.2"/>
+    <line x1="95" y1="36" x2="95" y2="108" stroke="#a5b4fc" strokeWidth="1" opacity="0.2"/>
+    {/* Company mark */}
+    <rect x="22" y="44" width="28" height="10" rx="2" fill="#818cf8" opacity="0.5"/>
+    {/* === CAB === */}
+    <path d="M130,58 L130,108 L196,108 L196,78 L174,58 Z" fill="url(#tg-cab)" filter="url(#tg-shadow)"/>
+    <polygon points="130,58 143,44 182,44 196,58" fill="#4f46e5"/>
+    <polygon points="196,58 182,44 182,78 196,78" fill="#312e81"/>
+    {/* Windshield */}
+    <polygon points="132,59 172,59 193,76 132,76" fill="#bfdbfe" opacity="0.82"/>
+    {/* Side window */}
+    <rect x="135" y="79" width="22" height="17" rx="2" fill="#bfdbfe" opacity="0.65"/>
+    {/* Door line */}
+    <line x1="162" y1="60" x2="162" y2="108" stroke="#3730a3" strokeWidth="1.5"/>
+    <circle cx="156" cy="84" r="2.5" fill="#6366f1"/>
+    {/* Headlight */}
+    <rect x="191" y="78" width="7" height="13" rx="2" fill="#fef9c3"/>
+    <ellipse cx="194" cy="84" rx="5" ry="7" fill="#fef08a" opacity="0.35"/>
+    {/* === WHEELS === */}
+    <circle cx="50" cy="116" r="19" fill="#0f172a"/>
+    <circle cx="50" cy="116" r="12" fill="#334155"/>
+    <circle cx="50" cy="116" r="6" fill="#64748b"/>
+    <circle cx="50" cy="116" r="2.5" fill="#94a3b8"/>
+    <circle cx="112" cy="116" r="19" fill="#0f172a"/>
+    <circle cx="112" cy="116" r="12" fill="#334155"/>
+    <circle cx="112" cy="116" r="6" fill="#64748b"/>
+    <circle cx="112" cy="116" r="2.5" fill="#94a3b8"/>
+    <circle cx="172" cy="116" r="17" fill="#0f172a"/>
+    <circle cx="172" cy="116" r="10" fill="#334155"/>
+    <circle cx="172" cy="116" r="5" fill="#64748b"/>
+    <circle cx="172" cy="116" r="2" fill="#94a3b8"/>
+    {/* Chassis */}
+    <rect x="12" y="108" width="118" height="8" rx="2" fill="#312e81"/>
+    <rect x="130" y="108" width="66" height="8" rx="2" fill="#281e73"/>
+  </svg>
+);
 
 export const CamionesForm: React.FC = () => {
-  const { camiones, addCamion, isLoading } = useApp();
+  const { camiones, addCamion, isLoading, showToast } = useApp();
   const [placa, setPlaca] = useState('');
   const [conductor, setConductor] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [lottieData, setLottieData] = useState<any>(null);
-
-  useEffect(() => {
-    // Animación Lottie gratuita de un camión de entrega
-    fetch('https://lottie.host/82df0e2a-ce5b-430c-9759-3cb3e9bf00cf/aP14o48qjV.json')
-      .then(res => {
-        if (res.ok) return res.json();
-        throw new Error('Error cargando Lottie');
-      })
-      .then(data => setLottieData(data))
-      .catch(err => console.warn('Lottie falló al cargar, usaremos un icono estático.', err));
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,7 +84,7 @@ export const CamionesForm: React.FC = () => {
     // Validación formato de placa estándar de Perú (e.g. ABC-123 o A1B-234)
     const cleanPlaca = placa.trim().toUpperCase();
     if (!/^[A-Z0-9]{3}-[A-Z0-9]{3}$/.test(cleanPlaca)) {
-      alert('La placa debe tener el formato AAA-123 (tres letras/números, guion, tres letras/números)');
+      showToast('La placa debe tener el formato AAA-123 (tres letras/números, guion, tres letras/números)', 'error');
       return;
     }
 
@@ -39,6 +95,7 @@ export const CamionesForm: React.FC = () => {
         conductor: conductor.trim(),
         fechaRegistro: new Date().toLocaleDateString('es-ES'),
       });
+      showToast('Camión registrado correctamente.', 'success');
       setPlaca('');
       setConductor('');
     } catch (error) {
@@ -60,14 +117,8 @@ export const CamionesForm: React.FC = () => {
             Registra y administra los camiones autorizados para el transporte de lotes de aves. Las placas registradas aquí se seleccionarán automáticamente en el formulario de ingreso de lotes.
           </p>
         </div>
-        <div className="w-40 h-40 flex items-center justify-center relative flex-shrink-0">
-          {lottieData ? (
-            <Lottie animationData={lottieData} loop={true} style={{ width: 160, height: 160 }} />
-          ) : (
-            <div className="p-6 bg-indigo-50 rounded-full border border-indigo-100 text-indigo-600 animate-pulse">
-              <Truck className="h-16 w-16" />
-            </div>
-          )}
+        <div className="w-44 h-36 flex items-center justify-center relative flex-shrink-0">
+          <Truck3D />
         </div>
       </div>
 

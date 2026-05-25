@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { type Venta, calcularMétricasLote, calcularMétricasVenta, generarIdVenta } from '../utils/calculations';
-import { Save, Search, Scale, ShoppingCart, Percent, Inbox, Sparkles } from 'lucide-react';
+import { Save, Search, Scale, ShoppingCart, Percent, Inbox, Sparkles, Trash2 } from 'lucide-react';
 
 export const VentasForm: React.FC = () => {
-  const { lotes, ventas, addVenta } = useApp();
+  const { lotes, ventas, addVenta, deleteVenta, showToast, showConfirm } = useApp();
   const [searchTerm, setSearchTerm] = useState('');
 
   // Form states
@@ -102,7 +102,7 @@ export const VentasForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedLoteCodigo) {
-      alert('Debes seleccionar un Lote de origen.');
+      showToast('Debes seleccionar un Lote de origen.', 'error');
       return;
     }
     try {
@@ -113,7 +113,7 @@ export const VentasForm: React.FC = () => {
       };
       
       await addVenta(ventaConId);
-      alert('Registro de procesamiento y venta guardado correctamente.');
+      showToast('Registro de procesamiento y venta guardado correctamente.', 'success');
       
       // Limpiar formulario
       setCliente('Distribuidora San Juan');
@@ -458,6 +458,7 @@ export const VentasForm: React.FC = () => {
                   <th className="py-2.5 px-4 text-right whitespace-nowrap">Rend. Carcasa</th>
                   <th className="py-2.5 px-4 text-right whitespace-nowrap">Venta Neta</th>
                   <th className="py-2.5 px-4 text-right whitespace-nowrap">Rentabilidad</th>
+                  <th className="py-2.5 px-4 text-center whitespace-nowrap"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-brandBorder/60">
@@ -490,6 +491,19 @@ export const VentasForm: React.FC = () => {
                       parseFloat(venta.porcentajeRentabilidad) >= 0 ? 'text-teal-600' : 'text-rose-600'
                     }`}>
                       {venta.porcentajeRentabilidad}
+                    </td>
+                    <td className="py-3 px-4 text-center whitespace-nowrap">
+                      <button
+                        onClick={() => showConfirm(
+                          'Eliminar Registro',
+                          `¿Eliminar el registro "${venta.idPedido}"? Esta acción no se puede deshacer.`,
+                          () => deleteVenta(venta.idPedido),
+                          { confirmLabel: 'Eliminar', variant: 'danger' }
+                        )}
+                        className="p-1.5 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-lg transition-colors inline-flex items-center justify-center focus:outline-none"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
                     </td>
                   </tr>
                 ))}

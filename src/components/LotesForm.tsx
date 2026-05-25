@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { type Lote, calcularMétricasLote } from '../utils/calculations';
-import { Search, Save, FileText, Users, Eye, Inbox } from 'lucide-react';
+import { Search, Save, FileText, Users, Eye, Inbox, Trash2 } from 'lucide-react';
 
 export const LotesForm: React.FC = () => {
-  const { lotes, addLote, camiones } = useApp();
+  const { lotes, addLote, deleteLote, camiones, showToast, showConfirm } = useApp();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedLoteForModal, setSelectedLoteForModal] = useState<Lote | null>(null);
 
@@ -81,12 +81,12 @@ export const LotesForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (porcentajeHembra + porcentajeMacho !== 100) {
-      alert('La suma de los porcentajes de hembras y machos debe ser exactamente 100%.');
+      showToast('La suma de los porcentajes de hembras y machos debe ser exactamente 100%.', 'error');
       return;
     }
     try {
       await addLote(currentLote);
-      alert('Lote guardado correctamente.');
+      showToast('Lote guardado correctamente.', 'success');
     } catch (e) {
       // Mensaje de error ya mostrado en el contexto
     }
@@ -445,7 +445,7 @@ export const LotesForm: React.FC = () => {
                   <th className="py-2.5 px-4 text-right whitespace-nowrap">Kilos Est.</th>
                   <th className="py-2.5 px-4 text-right whitespace-nowrap">Costo Total AQP</th>
                   <th className="py-2.5 px-4 text-right whitespace-nowrap">Costo/KG AQP</th>
-                  <th className="py-2.5 px-4 text-center whitespace-nowrap">Acciones</th>
+                  <th className="py-2.5 px-4 text-center whitespace-nowrap" colSpan={2}>Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-brandBorder/60">
@@ -472,6 +472,19 @@ export const LotesForm: React.FC = () => {
                         >
                           <Eye className="h-4 w-4" />
                           <span className="text-xxs">Breakdown</span>
+                        </button>
+                      </td>
+                      <td className="py-3 px-4 text-center whitespace-nowrap">
+                        <button
+                          onClick={() => showConfirm(
+                            'Eliminar Lote',
+                            `¿Eliminar el lote de factura "${lote.nroFactura}"? Esta acción no se puede deshacer.`,
+                            () => deleteLote(lote.nroFactura),
+                            { confirmLabel: 'Eliminar', variant: 'danger' }
+                          )}
+                          className="p-1.5 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-lg transition-colors inline-flex items-center justify-center focus:outline-none"
+                        >
+                          <Trash2 className="h-4 w-4" />
                         </button>
                       </td>
                     </tr>

@@ -118,3 +118,28 @@ export async function appendRowToSheet(sheetName: string, values: any[]) {
     })
   });
 }
+
+// Eliminar fila por índice 0-based (0 = header, 1 = primera fila de datos)
+export async function deleteRowFromSheet(sheetName: string, rowIndex: number) {
+  const metadata = await requestSheetsAPI('');
+  const sheets: any[] = metadata.sheets || [];
+  const sheet = sheets.find((s: any) => s.properties?.title === sheetName);
+  if (!sheet) throw new Error(`Hoja "${sheetName}" no encontrada`);
+  const sheetId = sheet.properties.sheetId;
+
+  await requestSheetsAPI(':batchUpdate', {
+    method: 'POST',
+    body: JSON.stringify({
+      requests: [{
+        deleteDimension: {
+          range: {
+            sheetId,
+            dimension: 'ROWS',
+            startIndex: rowIndex,
+            endIndex: rowIndex + 1,
+          }
+        }
+      }]
+    })
+  });
+}

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { type Lote, type Venta, calcularMétricasLote, calcularMétricasVenta, generarIdVenta } from '../utils/calculations';
 import { googleSheetsService } from '../services/googleSheets';
-import { CheckCircle2, AlertTriangle, Info, X as XIcon } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, Info, X as XIcon, Trash2 } from 'lucide-react';
 
 interface Credentials {
   clientId: string;
@@ -21,6 +21,53 @@ interface Toast {
   type: 'success' | 'error' | 'info';
   id: string;
 }
+
+interface ConfirmState {
+  title: string;
+  message: string;
+  confirmLabel: string;
+  variant: 'danger' | 'primary';
+  onConfirm: () => void;
+}
+
+const ConfirmDialog: React.FC<{ state: ConfirmState; onClose: () => void }> = ({ state, onClose }) => {
+  const isDanger = state.variant === 'danger';
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-toast-in">
+      <div className="bg-white rounded-2xl shadow-2xl border border-slate-100 max-w-sm w-full p-6 space-y-5">
+        <div className="flex items-start gap-3.5">
+          <div className={`p-2 rounded-xl flex-shrink-0 ${isDanger ? 'bg-rose-50' : 'bg-indigo-50'}`}>
+            {isDanger
+              ? <Trash2 className="h-5 w-5 text-rose-600" />
+              : <CheckCircle2 className="h-5 w-5 text-indigo-600" />}
+          </div>
+          <div>
+            <h3 className="font-bold text-slate-800 text-sm">{state.title}</h3>
+            <p className="text-xs text-slate-500 mt-1 leading-relaxed">{state.message}</p>
+          </div>
+        </div>
+        <div className="flex gap-2.5 justify-end pt-1">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-xs font-semibold text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 transition-all focus:outline-none"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={() => { state.onConfirm(); onClose(); }}
+            className={`px-4 py-2 text-xs font-semibold text-white rounded-xl shadow-sm transition-all focus:outline-none ${
+              isDanger
+                ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-200'
+                : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200'
+            }`}
+          >
+            {state.confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const ToastContainer: React.FC<{ toasts: Toast[]; onClose: (id: string) => void }> = ({ toasts, onClose }) => {
   return (
@@ -76,6 +123,9 @@ interface AppContextType {
   addLote: (lote: Lote) => Promise<void>;
   addVenta: (venta: Venta) => Promise<void>;
   addCamion: (camion: Camion) => Promise<void>;
+  deleteLote: (nroFactura: string) => Promise<void>;
+  deleteVenta: (idPedido: string) => Promise<void>;
+  showConfirm: (title: string, message: string, onConfirm: () => void, options?: { confirmLabel?: string; variant?: 'danger' | 'primary' }) => void;
   loginGoogle: () => Promise<void>;
   logoutGoogle: () => void;
   refreshData: () => Promise<void>;
@@ -104,6 +154,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
   const [authActive, setAuthActive] = useState<boolean>(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
+
+  const showConfirm = (
+    title: string,
+    message: string,
+    onConfirm: () => void,
+    options?: { confirmLabel?: string; variant?: 'danger' | 'primary' }
+  ) => {
+    setConfirmState({
+      title,
+      message,
+      onConfirm,
+      confirmLabel: options?.confirmLabel ?? 'Confirmar',
+      variant: options?.variant ?? 'primary',
+    });
+  };
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
     const id = Math.random().toString(36).substring(2, 9);
@@ -342,6 +408,66 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const deleteLote = async (nroFactura: string) => {
+    setIsLoading(true);
+    try {
+      if (mode === 'demo') {
+        const local = localStorage.getItem('avicola_local_lotes');
+        const current: Lote[] = local ? JSON.parse(local) : [];
+        const updated = current.filter(l => l.nroFactura !== nroFactura);
+        localStorage.setItem('avicola_local_lotes', JSON.stringify(updated));
+        setLotes(updated);
+      } else {
+        const res = await fetch('/api/lotes', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nroFactura }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || 'Error al eliminar el lote.');
+        }
+        await refreshData();
+      }
+      showToast('Lote eliminado correctamente.', 'success');
+    } catch (err) {
+      showToast('Error al eliminar lote: ' + (err as Error).message, 'error');
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const deleteVenta = async (idPedido: string) => {
+    setIsLoading(true);
+    try {
+      if (mode === 'demo') {
+        const local = localStorage.getItem('avicola_local_ventas');
+        const current = local ? JSON.parse(local) : [];
+        const updated = current.filter((v: any) => v.idPedido !== idPedido);
+        localStorage.setItem('avicola_local_ventas', JSON.stringify(updated));
+        setVentas(updated);
+      } else {
+        const res = await fetch('/api/ventas', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ idPedido }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || 'Error al eliminar la venta.');
+        }
+        await refreshData();
+      }
+      showToast('Registro eliminado correctamente.', 'success');
+    } catch (err) {
+      showToast('Error al eliminar venta: ' + (err as Error).message, 'error');
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const addCamion = async (camion: Camion) => {
     setIsLoading(true);
     try {
@@ -391,6 +517,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addLote,
         addVenta,
         addCamion,
+        deleteLote,
+        deleteVenta,
+        showConfirm,
         loginGoogle,
         logoutGoogle,
         refreshData,
@@ -400,6 +529,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     >
       {children}
       <ToastContainer toasts={toasts} onClose={(id) => setToasts(prev => prev.filter(t => t.id !== id))} />
+      {confirmState && (
+        <ConfirmDialog state={confirmState} onClose={() => setConfirmState(null)} />
+      )}
     </AppContext.Provider>
   );
 };

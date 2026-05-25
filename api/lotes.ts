@@ -1,9 +1,9 @@
-import { readSheetRange, ensureSheetExists, appendRowToSheet } from './_sheets.js';
+import { readSheetRange, ensureSheetExists, appendRowToSheet, deleteRowFromSheet } from './_sheets.js';
 
 export default async function handler(req: any, res: any) {
   // CORS Headers
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
@@ -78,6 +78,16 @@ export default async function handler(req: any, res: any) {
       ];
 
       await appendRowToSheet(sheetName, rowValues);
+      return res.status(200).json({ success: true });
+    }
+
+    if (req.method === 'DELETE') {
+      const { nroFactura } = req.body;
+      const sheetName = 'Base de Datos Lotes';
+      const rows = await readSheetRange(sheetName, 'B2:B1000');
+      const rowIdx = rows.findIndex((row: any) => row[0] === nroFactura);
+      if (rowIdx === -1) return res.status(404).json({ error: 'Lote no encontrado' });
+      await deleteRowFromSheet(sheetName, rowIdx + 1);
       return res.status(200).json({ success: true });
     }
 
