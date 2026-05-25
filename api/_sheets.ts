@@ -37,6 +37,16 @@ const jwt = new JWT({
   scopes: ['https://www.googleapis.com/auth/spreadsheets'],
 });
 
+function colToLetter(n: number): string {
+  let s = '';
+  while (n > 0) {
+    n--;
+    s = String.fromCharCode(65 + (n % 26)) + s;
+    n = Math.floor(n / 26);
+  }
+  return s;
+}
+
 export async function requestSheetsAPI(endpoint: string, options: RequestInit = {}) {
   const token = await jwt.getAccessToken();
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}${endpoint}`;
@@ -91,8 +101,8 @@ export async function ensureSheetExists(sheetName: string, headers: string[]) {
   // Escribir cabeceras si A1 está vacío
   const headerRow = await readSheetRange(sheetName, 'A1:A1');
   if (!headerRow || headerRow.length === 0) {
-    const colLetter = String.fromCharCode(65 + headers.length - 1);
-    await requestSheetsAPI(`/values/${encodeURIComponent(`'${sheetName}'!A1:${colLetter}1`)}?valueInputOption=USER_ENTERED`, {
+    const lastCol = colToLetter(headers.length);
+    await requestSheetsAPI(`/values/${encodeURIComponent(`'${sheetName}'!A1:${lastCol}1`)}?valueInputOption=USER_ENTERED`, {
       method: 'PUT',
       body: JSON.stringify({ values: [headers] })
     });
