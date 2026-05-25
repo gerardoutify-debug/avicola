@@ -394,21 +394,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           pesoOrigen: mLote.kilosTotalesEstimados,
           tipoVenta: venta.tipoVenta,
           cliente: venta.cliente,
+          cantidadPollos: venta.cantidadPollos,
           pesoLlegada: venta.pesoLlegada,
-          muertos: venta.muertos,
+          pesoSalida: venta.pesoSalida,
           ventaNeta: venta.ventaNeta,
-          pesoCarcasa: venta.pesoCarcasa,
-          pesoCabezas: venta.pesoCabezas,
-          pesoHigados: venta.pesoHigados,
-          pesoRinones: venta.pesoRinones,
-          pesoOtras: venta.pesoOtras,
           mermaTotal: mv.mermaTotal,
           porcentajeMerma: mv.porcentajeMerma.toFixed(2) + '%',
-          totalMenudencia: mv.totalMenudencia,
+          rendimientoReal: mv.rendimientoReal.toFixed(2) + '%',
           margenContribucion: mv.margenContribucion,
           porcentajeRentabilidad: mv.porcentajeRentabilidad.toFixed(2) + '%',
           costoKgFinal: mv.costoKgFinal,
-          rendimientoCarcasa: mv.rendimientoCarcasa.toFixed(2) + '%'
         };
 
         const localVentas = localStorage.getItem('avicola_local_ventas');
